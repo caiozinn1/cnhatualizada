@@ -1,0 +1,600 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carteira Digital de Trânsito</title>
+    
+    <!-- Configurações para adicionar à tela inicial -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Carteira Digital de Trânsito">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Ícone da tela inicial -->
+    <link rel="apple-touch-icon" href="https://www.gov.br/pt-br/apps/carteira-digital-de-transito-1/@@images/imagem/mini">
+    <link rel="apple-touch-startup-image" href="tela-de-carregamento.png">
+    
+    <!-- Cor da barra de status no iPhone -->
+    <meta name="theme-color" content="#002a5e"> <!-- Azul escuro do header -->
+
+    <!-- Incluindo Hammer.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <!-- Incluindo Font Awesome (se você usar Font Awesome para ícones) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Estilo básico -->
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background-color: #002a5e;
+            overflow-x: hidden; /* Evita rolagem horizontal */
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        header {
+            background-color: #002a5e; /* Azul escuro */
+            color: white;
+            padding: 15px;
+            padding-left: 60px; /* Espaço para o ícone */
+            position: fixed; /* Fixar o header no topo */
+            top: 0; /* Posicionar no topo */
+            left: 0; /* Posicionar à esquerda */
+            width: 100%; /* Largura total da página */
+            z-index: 1000; /* Garantir que o header fique acima do conteúdo */
+            border-bottom-left-radius: 15px; /* Bordas inferiores arredondadas */
+            border-bottom-right-radius: 15px;
+            box-sizing: border-box; /* Inclui padding na largura total */
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            font-size: 0.9em;
+            color: #b3c1d1; /* Cinza claro */
+        }
+
+        .modal {
+            display: none; /* Escondido por padrão */
+            position: fixed; 
+            z-index: 2000; /* Acima do header */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Fundo preto com opacidade */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 80%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-contenthist {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 10px;
+            max-width: 90%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .modal-button {
+            padding: 10px 20px;
+            background-color: #002a5e;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Arial Rounded MT Bold', sans-serif;
+        }
+
+        .modal-button:hover {
+            background-color: #004080;
+        }
+
+        .modal-button:not(:last-child) {
+            margin-right: 10px;
+        }
+
+        .verify-text {
+            color: #002a5e; /* Mesma cor do header */
+            font-family: 'Arial Rounded MT Bold', sans-serif; /* Fonte arredondada */
+            font-weight: bold;
+            letter-spacing: -0.5px; /* Compacta a fonte */
+            font-size: 0.8em;
+            text-align: center;
+            margin-top: 10px; /* Reduzido o espaço entre o header e a imagem */
+        }
+
+        .verify-text .vio {
+            text-decoration: underline;
+            color: #4a90e2; /* Azul mais claro */
+        }
+
+        .back-circle {
+            position: absolute;
+            top: 50%;
+            left: 15px;
+            transform: translateY(-50%);
+            background: linear-gradient(
+                rgba(128, 128, 128, 0.4), 
+                rgba(128, 128, 128, 0.4)
+            ), #002a5e; /* Fundo azul com sobreposição cinza */
+            width: 40px; /* Tamanho do círculo */
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Sombra para efeito de elevação */
+        }
+
+        .back-circle a {
+            color: white; /* Cor da seta */
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .back-circle a::before {
+            content: "\f104"; /* Código da seta esquerda em FontAwesome */
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+        }
+
+        .content {
+            margin-top: 75px; /* Espaço suficiente para o header fixo, ajuste conforme necessário */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 18px; /* Adicionado padding para a galeria e o botão não ficarem muito próximos das bordas */
+        }
+        
+        .content22 {
+            margin-top: 75px; /* Espaço suficiente para o header fixo, ajuste conforme necessário */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 19px; /* Adicionado padding para a galeria e o botão não ficarem muito próximos das bordas */
+        }
+
+        .gallery-container {
+            width: 100%; /* Garante que o contêiner ocupe toda a largura da tela */
+            overflow: hidden;
+            position: relative;
+            margin-top: 10px; /* Espaço reduzido entre o header e a imagem */
+            padding: 0; /* Remove padding se houver */
+            box-sizing: border-box; /* Inclui padding e border na largura total */
+        }
+
+        .gallery {
+            display: flex;
+            transition: transform 0.3s ease-in-out;
+            width: 100%; /* Garante que o gallery ocupe toda a largura disponível */
+        }
+
+        .gallery img {
+            width: 100%; /* Garante que a imagem ocupe toda a largura do contêiner */
+            height: 100%; /* Garante que a imagem ocupe toda a altura do contêiner */
+            object-fit: cover; /* Faz com que a imagem preencha o contêiner, cortando partes se necessário */
+        }
+
+        .dots {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            margin: 0 4px;
+            background-color: white;
+            border-radius: 50%;
+            border: 1px solid #002a5e; /* Contorno azul mais fino */
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .dot.active {
+            background-color: #002a5e; /* Azul escuro para a bolinha ativa */
+        }
+
+        /* Estilo do botão retangular */
+        .button {
+            margin-top: 20px;
+            padding: 15px 20px; /* Aumentado a altura do botão */
+            background-color: white; /* Fundo branco para o botão */
+            color: #002a5e; /* Cor do texto igual ao header */
+            border: none; /* Remove a borda azul */
+            border-radius: 5px; /* Bordas levemente arredondadas */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra sutil no botão */
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            font-weight: bold;
+            font-family: 'Arial Rounded MT Bold', sans-serif; /* Fonte arredondada */
+            letter-spacing: -0.3px; /* Compacta a fonte */
+            font-size: 1em;
+            width: 100%; /* Largura total disponível */
+            max-width: 350px; /* Largura máxima do botão */
+            box-sizing: border-box; /* Inclui padding e border na largura total */
+        }
+
+        .button i {
+            margin-right: 13px;
+            font-size: 1.2em;
+        }
+
+        .button:hover {
+            background-color: #f0f0f0; /* Fundo levemente cinza ao passar o mouse */
+        }
+
+        h3 {
+            margin-top: 20px; /* Adicionado espaço acima do texto */
+            font-size: 0.8em; /* Tamanho menor para o texto */
+            color: #002a5e; /* Cor do texto igual ao header */
+        }
+        
+
+.section {
+    background-color: white;
+    text-align: center;
+    /*border-radius: 10px;*/
+    /*margin-bottom: 20px;*/
+    /*box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);*/
+}
+
+.section h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.section p {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.section p strong {
+    font-weight: bold;
+}
+
+.sectionPrimeira {
+    background-color: white;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.sectionPrimeira h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.sectionPrimeira p {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.sectionPrimeira p strong {
+    font-weight: bold;
+}
+
+        .modalCentro {
+            display: none; /* Escondido por padrão */
+            position: fixed; 
+            z-index: 2000; /* Acima do header */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 120%;
+            background-color: rgba(0, 0, 0, 0.5); /* Fundo preto com opacidade */
+            display: flex;
+        }
+
+        .modal-contentCentro {
+            background-color: #f0f0f0;
+            padding: 3px;
+            border-radius: 10px;
+            max-width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modalPrimeiro {
+            display: none; /* Escondido por padrão */
+            position: fixed; 
+            z-index: 2000; /* Acima do header */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 120%;
+            background-color: rgba(0, 0, 0, 0.5); /* Fundo preto com opacidade */
+            display: flex;
+        }
+
+        .modal-contentPrimeiro {
+            background-color: #f0f0f0;
+            padding: 3px;
+            border-radius: 10px;
+            max-width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        
+        
+        .buttonE {
+           background-color: white;
+            border: none; /* Remove a borda azul */
+            border-radius: 5px; /* Bordas levemente arredondadas */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra sutil no botão */
+            padding: 15px 20px;
+            text-align: center;
+            text-decoration: none;
+            flex: 1;
+            margin: 0 10px;
+            color: #002a5e;
+            font-weight: bold;
+            font-family: 'Arial Rounded MT Bold', sans-serif; /* Fonte arredondada */
+            letter-spacing: -0.3px; /* Compacta a fonte */
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .buttonE i {
+            margin-right: 13px;
+            display: block;
+            font-size: 2.0em;
+            margin: 0 auto 10px;
+        }
+
+        .buttonE:hover {
+            background-color: #f0f0f0; /* Fundo levemente cinza ao passar o mouse */
+        }
+        
+.merda {
+    background-color: white;
+}
+
+.merda h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.merda p {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.merda p strong {
+    font-weight: bold;
+}
+    </style>
+</head>
+<body>
+    <div id="modalPrimeiro" class="modalPrimeiro">
+        <div class="modal-contentPrimeiro">
+            <header>
+                <div class="back-circle">
+                    <a id="meuSaco"></a> <!-- Ícone de voltar dentro do círculo -->
+                </div>  
+                <h1>‎ CONDUTOR</h1>
+            </header>
+            <div class="content22">
+                <section class="sectionPrimeira">
+                    <h2>‎ ‎ ‎ Informações do condutor</h2>
+                    <p><strong>‎ ‎ ‎ Nome</strong><br>‎ ‎ ‎ CAIO MORAIS GAYER PINHEIRO</p>
+                    
+                    <p><strong>‎ ‎ ‎ CPF‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ SEXO</strong><br>‎ ‎ ‎ 70790915197‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ MASCULINO</p>
+                    
+                    <p><strong>‎ ‎ ‎ Categoria‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ UF de Emissão‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ </strong><br>‎ ‎ ‎ B‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎GO</p>
+                    
+                    <p><strong>‎ ‎ ‎ Data de Validade‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎  Data de Emissão</strong><br>‎ ‎ ‎ 04/07/2034‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎16/07/2025</p>
+                    <p style="font-size: 8px;">‎ </p>
+                </section>
+                <div style="display: flex; gap: 1px; width: 100%; height: 120%; justify-content: center;">
+                    <a href="#" id="acessButton" class="buttonE"><i class="fas fa-address-card"></i>HABILITAÇÃO</a>
+                    <a href="#" id="merdaButton" class="buttonE">CADASTRO POSITIVO INDISPONÍVEL</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    
+    <div id="modalCentro" class="modalCentro">
+        <div class="modal-contentCentro">
+            <header>
+                <div class="back-circle">
+                    <a id="fecharApp"></a> <!-- Ícone de voltar dentro do círculo -->
+                </div>  
+                <h1>HABILITAÇÃO</h1>
+                <p id="updated-time">Atualizada em: --/--/---- --:--:--</p>
+            </header>
+            <div class="content">
+                <p class="verify-text">Verifique a autenticidade do QR Code com o app <span class="vio">Vio</span></p>
+                <div class="gallery-container">
+                    <div class="gallery">
+                        <img src="https://cnhdigital.netlify.app/imagem1.png" alt="Imagem 1">
+                        <img src="https://cnhdigital.netlify.app/imagem2.png" alt="Imagem 2">
+                        <img src="https://cnhdigital.netlify.app/imagem3.png" alt="Imagem 3">
+                    </div>
+                    <div class="dots">
+                        <div class="dot active"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                    <a href="#" id="historicoButton" class="button"><i class="fas fa-address-card"></i>Histórico de emissões da CNH</a>
+                    <a href="#" id="removeButton" class="button"><i class="fas fa-trash"></i>Remover</a>
+                    <h3>ㅤ</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <p>Você deseja mesmo remover sua CNH?</p>
+            <div class="modal-buttons">
+                <button id="confirmYes" class="modal-button">Sim</button>
+                <button id="confirmNo" class="modal-button">Não</button>
+            </div>
+        </div>
+    </div>
+        <div id="historicoModal" class="modalPrimeiro">
+        <div class="modal-contentPrimeiro">
+            <header>
+                <div class="back-circle">
+                    <a id="confirmOk"></a> <!-- Ícone de voltar dentro do círculo -->
+                </div>  
+                <h1>HISTÓRICO DE EMISSÕES D...</h1>
+                <p id="updated-time">Emitida em: 16/07/2025</p>
+            </header>
+            <div class="content22">
+                <p></p>
+            <section class="merda">
+            
+                <h1>‎ ‎ ‎ Dados Identificatórios</h1>
+                <p><strong>‎ ‎ ‎  Nome do Condutor</strong><br>‎ ‎ ‎  CAIO MORAIS GAYER PINHEIRO</p>
+                <p><strong>‎ ‎ ‎  Nome da Mãe</strong><br>‎ ‎ ‎  LUCIANNE MORAIS JORGE</p>
+                <p><strong>‎ ‎ ‎  Data de Nascimento‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ CPF do Condutor  </strong><br>‎ ‎ ‎  05/03/2007‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ 70790915197‎ ‎ ‎ ‎ ‎ </p>
+                <p><strong>‎ ‎ ‎  Nacionalidade‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ Localidade do </strong><br>‎ ‎ ‎  BRASILEIRO(A)‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ <strong>Nascimento</strong><br>‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎   GOIANIA</p>
+                <h1>‎ ‎ ‎ Documento</h1>
+                <p><strong>‎ ‎ ‎  Tipo do Documento</strong><br>‎ ‎ ‎  CARTEIRA IDENTIDADE</p>
+                <p><strong>‎ ‎ ‎  Número / Órgão Expedidor / UF do ‎ ‎ <br>‎ ‎ ‎  Expedidor</strong><br> ‎ ‎ ‎ 6739041</p>
+                <h2>ﾠ</h2>
+                <h2>ﾠ</h2>
+                <h2>ﾠ</h2>
+            </section>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Exibindo a data e hora em que o site foi aberto
+        const updatedTimeElement = document.getElementById('updated-time');
+        const now = new Date();
+        const formattedDate = now.toLocaleDateString('pt-BR');
+        const formattedTime = now.toLocaleTimeString('pt-BR');
+        updatedTimeElement.textContent = `Atualizada em: ${formattedDate} - ${formattedTime}`;
+
+        const gallery = document.querySelector('.gallery');
+        const dots = document.querySelectorAll('.dot');
+        const totalSlides = document.querySelectorAll('.gallery img').length;
+        let index = 0;
+
+        function showSlide(newIndex) {
+            index = (newIndex + totalSlides) % totalSlides;
+            const offset = -index * 100; // Cada imagem ocupa 100% da largura do contêiner
+            gallery.style.transform = `translateX(${offset}%)`;
+            updateDots();
+        }
+
+        function updateDots() {
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === index);
+            });
+        }
+
+        // Configuração do Hammer.js para detectar gestos de deslizar
+        const mc = new Hammer(document.querySelector('.gallery-container'));
+        mc.on('swipeleft', () => showSlide(index + 1));
+        mc.on('swiperight', () => showSlide(index - 1));
+
+        // Inicializa a galeria na primeira imagem
+        showSlide(0);
+
+        // Permite que as bolinhas sejam clicáveis
+        dots.forEach((dot, i) => {
+            dot.addEventListener('click', () => showSlide(i));
+        });
+        
+
+        // Seleciona os elementos do modal e os botões
+        const removeButton = document.getElementById('removeButton');
+        const modal = document.getElementById('confirmModal');
+        modal.style.display = 'none';
+        const confirmYes = document.getElementById('confirmYes');
+        const confirmNo = document.getElementById('confirmNo');
+        
+        // Quando o botão "Remover" for clicado, exibe o modal
+        removeButton.addEventListener('click', function(event) {
+            event.preventDefault(); // Impede a ação padrão do link
+            modal.style.display = 'flex';
+        });
+        
+        // Se o usuário clicar em "Sim"
+        confirmYes.addEventListener('click', function() {
+            modal.style.display = 'none';
+            alert('CNH removida com sucesso! Reinicie o aplicativo para visualizar as mudanças.'); // Exemplo de ação que pode ser substituída
+            // Aqui você pode adicionar a lógica para realmente remover a CNH
+        });
+        
+        // Se o usuário clicar em "Não"
+        confirmNo.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+        
+        const modalCentro = document.getElementById('modalCentro');
+        modalCentro.style.display = 'none';
+        
+        const historicoButton = document.getElementById('historicoButton');
+        const historicoModal = document.getElementById('historicoModal');
+        historicoModal.style.display = 'none';
+        const confirmOk = document.getElementById('confirmOk');
+        historicoButton.addEventListener('click', function(event) {
+            event.preventDefault(); // Impede a ação padrão do link
+            historicoModal.style.display = 'flex';
+        });
+        confirmOk.addEventListener('click', function() {
+            historicoModal.style.display = 'none';
+        });
+        
+        const botaoVoltar = document.getElementById('fecharApp');
+        botaoVoltar.addEventListener('click', function() {
+            // alert('Não foi possível voltar. Reinicie o aplicativo.');
+            modalCentro.style.display = 'none';
+        });
+        
+        const acessButton = document.getElementById('acessButton');
+        acessButton.addEventListener('click', function(event) {
+            event.preventDefault(); // Impede a ação padrão do link
+            modalCentro.style.display = 'flex';
+        });
+        
+        const merdaButton = document.getElementById('merdaButton');
+        merdaButton.addEventListener('click', function(event) {
+            // alert('O cadastro positivo está indisponível no momento.');
+        });
+    
+    </script>
+</body>
+</html>
